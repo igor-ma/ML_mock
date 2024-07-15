@@ -6,8 +6,8 @@ from modules.database import Database
 
 def main():
     '''Main function'''
-    GUI() #start app
     db = Database() #create database
+    GUI(db) #start app
 
 if __name__ == '__main__':
     main()

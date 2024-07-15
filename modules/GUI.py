@@ -2,13 +2,16 @@
 
 import streamlit as st
 from datetime import datetime
+from modules.database import Database
+from modules.data_utils import DataUtils
 
 
 class GUI:
     '''GUI representation class'''
 
-    def __init__(self) -> None:
+    def __init__(self, db: Database) -> None:
         '''Start the main GUI using Streamlit'''
+        self.db = db
 
         st.title('Case - Fine-tuning e Deploy de LLMs')
         tabs = ['Registro de Datasets', 'Fine-tuning', 'Deploy', 'Swagger', 'Dashboard']
@@ -33,7 +36,21 @@ class GUI:
         source = st.text_input('Fonte do dado')
         date = st.date_input('Data de criação', datetime.today())
         language = st.text_input('Idioma')
+
         if st.button('Salvar'):
+            train_path, val_path, test_path = DataUtils().processDataset(
+                txt_path.name)
+            
+            data = {
+                'train_path': train_path,
+                'val_path': val_path,
+                'test_path': test_path,
+                'source': source,
+                'date': date,
+                'language': language
+            }
+            self.db.insertDatasets(data)
+            
             st.success('Dados salvos com sucesso.')
 
     def fine_tuning(self):
