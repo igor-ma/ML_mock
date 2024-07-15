@@ -37,7 +37,8 @@ class Database:
                 test_path TEXT,
                 source TEXT,
                 date DATE,
-                language TEXT
+                language TEXT,
+                name TEXT
             )
         ''')
         self.fieldsDatasets = ['train_path', 'val_path', 'test_path', 
@@ -89,8 +90,8 @@ class Database:
 
         data = self._imputFields(self.fieldsDatasets, data)
         self.cursor.execute("""
-            INSERT INTO Datasets (train_path, val_path, test_path, source, date, language)
-            VALUES (:train_path, :val_path, :test_path, :source, :date, :language)
+            INSERT INTO Datasets (train_path, val_path, test_path, source, date, language, name)
+            VALUES (:train_path, :val_path, :test_path, :source, :date, :language, :name)
         """, data)
         self.connection.commit()
         if self.cursor.lastrowid is not None:
