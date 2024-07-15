@@ -73,5 +73,54 @@ class Database:
                 FOREIGN KEY (id_apis) REFERENCES APIs(id)
             )
         ''')
-        self.fieldsAPIs = ['id_datasets', 'id_apis', 'model_path', 'learning_rate',
+        self.fieldsTunedModels = ['id_datasets', 'id_apis', 'model_path', 'learning_rate',
         'lora_rank', 'metric_1', 'deployed', 'train_curve_path', 'val_curve_path']
+    
+    def _imputFields(self, fields: list, data: dict):
+        '''Imput fields um data dict that might be missing according to fields list'''
+
+        for field in fields:
+            if field not in data:
+                data[field] = None
+        return data
+
+    def insertDatasets(self, data: dict):
+        '''Insert row on table Datasets'''
+
+        data = self._imputFields(self.fieldsDatasets, data)
+        self.cursor.execute("""
+            INSERT INTO A (path_train, path_val, path_test, source, date, language)
+            VALUES (:path_train, :path_val, :path_test, :source, :date, :language)
+        """, data)
+        self.connection.commit()
+        if self.cursor.lastrowid is not None:
+            print(f"ID da última linha inserida: {self.cursor.lastrowid}")
+
+    def insertAPIs(self, data: dict):
+        '''Insert row on table APIs'''
+        
+        data = self._imputFields(self.fieldsAPIs, data)
+        self.cursor.execute("""
+            INSERT INTO APIs (uri)
+            VALUES (:uri)
+        """, data)
+        self.connection.commit()
+        if self.cursor.lastrowid is not None:
+            print(f"ID da última linha inserida: {self.cursor.lastrowid}")
+
+
+    def insertTunedModels(self, data: dict):
+        '''Insert row on table TunedModels'''
+        
+        data = self._imputFields(self.fieldsTunedModels, data)
+        self.cursor.execute("""
+            INSERT INTO TunedModels (id_datasets, id_apis, model_path, learning_rate,
+                                     lora_rank, metric_1, deployed, train_curve_path,
+                                        val_curve_path)
+            VALUES (:id_datasets, :id_apis, :model_path, :learning_rate,
+                    :lora_rank, :metric_1, :deployed, :train_curve_path,
+                            :val_curve_path)
+            """, data)
+        self.connection.commit()
+        if self.cursor.lastrowid is not None:
+            print(f"ID da última linha inserida: {self.cursor.lastrowid}")
