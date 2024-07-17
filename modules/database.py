@@ -66,16 +66,16 @@ class Database:
                 model_path TEXT,
                 learning_rate REAL,
                 lora_rank REAL,
-                metric_1 REAL,
+                accuracy REAL,
                 deployed INTEGER DEFAULT 0,
-                train_curve_path TEXT,
-                val_curve_path TEXT,
+                train_loss_path TEXT,
+                val_loss_path TEXT,
                 FOREIGN KEY (id_datasets) REFERENCES Datasets(id),
                 FOREIGN KEY (id_apis) REFERENCES APIs(id)
             )
         ''')
         self.fieldsTunedModels = ['id_datasets', 'id_apis', 'model_path', 'learning_rate',
-        'lora_rank', 'metric_1', 'deployed', 'train_curve_path', 'val_curve_path']
+        'lora_rank', 'accuracy', 'deployed', 'train_loss_path', 'val_loss_path']
     
     def _imputFields(self, fields: list, data: dict):
         '''Imput fields um data dict that might be missing according to fields list'''
@@ -116,11 +116,11 @@ class Database:
         data = self._imputFields(self.fieldsTunedModels, data)
         self.cursor.execute("""
             INSERT INTO TunedModels (id_datasets, id_apis, model_path, learning_rate,
-                                     lora_rank, metric_1, deployed, train_curve_path,
-                                        val_curve_path)
+                                     lora_rank, accuracy, deployed, train_loss_path,
+                                        val_loss_path)
             VALUES (:id_datasets, :id_apis, :model_path, :learning_rate,
-                    :lora_rank, :metric_1, :deployed, :train_curve_path,
-                            :val_curve_path)
+                    :lora_rank, :accuracy, :deployed, :train_loss_path,
+                            :val_loss_path)
             """, data)
         self.connection.commit()
         if self.cursor.lastrowid is not None:
