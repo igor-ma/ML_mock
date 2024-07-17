@@ -5,6 +5,7 @@ from modules.database import Database
 import datetime
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
 from peft import get_peft_model, LoraConfig, TaskType
+from sklearn.metrics import accuracy_score
 from datasets import load_dataset
 import evaluate
 from evaluate import evaluator
@@ -98,22 +99,16 @@ class Pipeline:
 
         return trainer
       
-    def _eval(self, trainer, tokenizer, test_dataset, metric_name='accuracy'):
-        '''Evaluate a model (inside object trainer) on a test dataset'''
-        metric = evaluate.load(metric_name)
-        task_evaluator = evaluator("text-classification")
-        results = task_evaluator.compute(
-            model_or_pipeline = trainer.model,
-            data = test_dataset,
-            metric = metric,
-            tokenizer = tokenizer,
-            label_mapping = {"LABEL_0": 0, "LABEL_1": 1}
-        )
-        return results['accuracy']
+    def _computeAccuracy(self, trainer, test_dataset):
+        '''Compute model accuracy on a test dataset'''
+        predictions = trainer.predict(test_dataset)
+        predicted_labels = predictions.predictions.argmax(axis=1)
+        true_labels = test_dataset['label']
+        accuracy = accuracy_score(true_labels, predicted_labels)
+        return accuracy
 
-    def fineTuneModel(self, model_name: str, ds_option: str, ft_option: str, ranking: int, learning_rate: float):
+    def fineTuneModel(self, model_name: str, dataset_id: int, ft_option: str, ranking: int, learning_rate: float):
         #load dataset
-        dataset_id = ds_option.split(',')[0]
         self.db.cursor.execute(f"""
             SELECT train_path, val_path, test_path 
             FROM Datasets
@@ -142,7 +137,7 @@ class Pipeline:
         trainer = self._train(model_name, learning_rate, train_dataset, val_dataset, ft_option, ranking, artifacts_path)
 
         #evaluate final model
-        final_metric = self._eval(trainer, tokenizer, test_dataset)
+        final_metric = self._computeAccuracy(trainer, test_dataset)
 
         train_loss = [msr['loss'] for msr in trainer.state.log_history if 'loss' in msr.keys()]
         val_loss = [msr['eval_loss'] for msr in trainer.state.log_history if 'eval_loss' in msr.keys()]
@@ -165,5 +160,5 @@ class Pipeline:
         }
         self.db.insertTunedModels(data)
 
-    def deployModel(self):
-        pass
+    def deployModel(self, model_id: int):
+        print(model_id)
