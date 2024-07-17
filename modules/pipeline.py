@@ -3,8 +3,7 @@
 from modules.data_utils import DataUtils
 from modules.database import Database
 import datetime
-import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM, Seq2SeqTrainer, Seq2SeqTrainingArguments
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
 from datasets import load_dataset
 
 
@@ -15,6 +14,8 @@ class Pipeline:
         self.db = db
 
     def registerDataset(self, input_path: str, source: str, date: datetime.date, language: str, name: str):
+        '''Register a new dataset'''
+
         #get data split paths to save on database
         train_path, val_path, test_path = DataUtils().processDataset(input_path)
         
@@ -32,58 +33,83 @@ class Pipeline:
         #save
         self.db.insertDatasets(data)
 
+    def load_texts(self, file_path):
+        with open(file_path, 'r', encoding='utf-8') as file:
+            texts = file.readlines()
+        texts = [text.strip() for text in texts]
+        return texts
 
     def _train(self, model_name: str, learning_rate: float, train_dataset, val_dataset):
-        device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-        model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
+        '''Train a model given the datasets and configs'''
 
-        #set training parameters
-        training_args = Seq2SeqTrainingArguments(
-            per_device_train_batch_size=4,
-            per_device_eval_batch_size=4,
+        #load model
+        model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
+        
+        #set parameters for training
+        training_args = TrainingArguments(
+            per_device_train_batch_size=2,
+            per_device_eval_batch_size=2,
             learning_rate=learning_rate,
-            evaluation_strategy="epoch",
-            logging_steps=10,
-            save_steps=10,
-            eval_steps=10,
             output_dir="./results",
-            logging_dir="./logs",
-            overwrite_output_dir=True,
-            save_total_limit=3,
             num_train_epochs=1
         )
 
-        #set trainer
-        trainer = Seq2SeqTrainer(
-            model=model,
-            args=training_args,
-            train_dataset=train_dataset,
-            eval_dataset=val_dataset,
-            tokenizer=tokenizer
+        #train
+        trainer = Trainer(
+            model=model, 
+            args=training_args, 
+            train_dataset=train_dataset, 
+            eval_dataset=val_dataset
         )
-
-        #fine-tune
         trainer.train()
-
+        
         #save final model
         trainer.save_model()
 
         return trainer
       
     def _eval(self, trainer, test_dataset):
-        return trainer.evaluate(test_dataset=test_dataset)
+        '''Evaluate a model (inside object trainer) on a test dataset'''
+        return trainer.evaluate(eval_dataset=test_dataset)
+    
+    def _tokenizeSplits(self, model_name: str, dataset):
+        '''Tokenize texts to build dataset splits'''
+
+        #load tokenizer
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+        #define a pad token if there isn't one
+        tokenizer.pad_token = tokenizer.eos_token if not tokenizer.pad_token else tokenizer.pad_token
+
+        #tokenize the 'text' field
+        def tokenize_function(examples):
+            return tokenizer(examples["text"], padding="max_length", truncation=True)
+        tokenized_datasets = dataset.map(tokenize_function, batched=True)
+
+        #split data
+        train_dataset = tokenized_datasets["train"]
+        val_dataset = tokenized_datasets["val"]
+        test_dataset = tokenized_datasets["test"]
+
+        return train_dataset, val_dataset, test_dataset
 
     def fineTuneModel(self, model_name: str, ds_option: str, ft_option: str, ranking: int, learning_rate: float):
-        train_dataset = load_dataset('text', data_files="data/2c1d6990-c264-4442-bf9c-3776f7d3bb4a/train.txt")
-        val_dataset = load_dataset('text', data_files="data/2c1d6990-c264-4442-bf9c-3776f7d3bb4a/val.txt")
-        test_dataset = load_dataset('text', data_files="data/2c1d6990-c264-4442-bf9c-3776f7d3bb4a/test.txt")
+        #load dataset
+        data_files = {
+            'train': 'data/teste/train.csv',
+            'val': 'data/teste/val.csv',
+            'test': 'data/teste/test.csv'
+        }
+        dataset = load_dataset('csv', data_files=data_files)
+
+        train_dataset, val_dataset, test_dataset = self._tokenizeSplits(model_name, dataset)
 
         #fine-tune 
         trainer = self._train(model_name, learning_rate, train_dataset, val_dataset)
 
         #evaluate final model
         results = self._eval(trainer, test_dataset)
+        print(results)
 
     def deployModel(self):
         pass

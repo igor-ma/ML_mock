@@ -15,7 +15,10 @@ class GUI:
         self.db = db
         self.pipeline = Pipeline(db)
 
-        st.title('Case - Fine-tuning e Deploy de LLMs')
+        st.title('Fine-tuning e Deploy de LLMs para Classificação de Sentimentos')
+        st.markdown("""
+            Os dataset (.csv) deve conter os campos 'text' e 'label', e suas labels precisam ser binárias (0 ou 1).
+        """)
         tabs = ['Registro de Datasets', 'Fine-tuning', 'Deploy', 'Swagger', 'Dashboard']
         choice = st.sidebar.radio('Selecione a aba:', tabs)
 
@@ -35,7 +38,7 @@ class GUI:
 
         #create tab elements
         st.subheader('Registro de Datasets')
-        txt_path = st.file_uploader('Selecione o arquivo de dados (.txt)')
+        txt_path = st.file_uploader('Selecione o arquivo de dados (.csv)')
         name = st.text_input('Nome do dataset')
         source = st.text_input('Fonte do dado')
         date = st.date_input('Data de criação', datetime.today())
