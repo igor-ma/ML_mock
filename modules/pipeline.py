@@ -11,7 +11,12 @@ import evaluate
 from evaluate import evaluator
 import os
 import uuid
-
+import os
+import subprocess
+import sys
+from pathlib import Path
+from fastapi import FastAPI
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 class Pipeline:
     '''Pipeline representation class'''
@@ -81,8 +86,8 @@ class Pipeline:
             output_dir=artifacts_path,
             num_train_epochs=1,
             logging_steps=2, #log at each batch
-            evaluation_strategy='steps', #evaluate at each step (at each batch, in this case)
-            metric_for_best_model='f1'
+            eval_strategy='steps', #evaluate at each step (at each batch, in this case)
+            load_best_model_at_end=True
         )
 
         #train
@@ -94,7 +99,7 @@ class Pipeline:
         )
         trainer.train()
         
-        #save final model
+        #save tokenizer and best model
         trainer.save_model()
 
         return trainer
@@ -145,7 +150,10 @@ class Pipeline:
         DataUtils().savePickle(os.path.join(artifacts_path, 'train_loss.pkl'), train_loss)
         DataUtils().savePickle(os.path.join(artifacts_path, 'val_loss.pkl'), val_loss)
 
-        #save
+        #save tokenizer
+        tokenizer.save_pretrained(artifacts_path)
+
+        #save metadata
         data = {
             'id_datasets': dataset_id,
             'id_apis': None, #model is not deployed
@@ -161,4 +169,6 @@ class Pipeline:
         self.db.insertTunedModels(data)
 
     def deployModel(self, model_id: int):
-        print(model_id)
+        pass
+
+
