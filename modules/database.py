@@ -63,6 +63,7 @@ class Database:
                 id INTEGER PRIMARY KEY,
                 id_datasets INTEGER NOT NULL,
                 id_apis INTEGER,
+                model_name TEXT,
                 model_path TEXT,
                 learning_rate REAL,
                 lora_rank REAL,
@@ -74,7 +75,7 @@ class Database:
                 FOREIGN KEY (id_apis) REFERENCES APIs(id)
             )
         ''')
-        self.fieldsTunedModels = ['id_datasets', 'id_apis', 'model_path', 'learning_rate',
+        self.fieldsTunedModels = ['id_datasets', 'id_apis', 'model_name', 'model_path', 'learning_rate',
         'lora_rank', 'accuracy', 'deployed', 'train_loss_path', 'val_loss_path']
     
     def _imputFields(self, fields: list, data: dict):
@@ -115,10 +116,10 @@ class Database:
         
         data = self._imputFields(self.fieldsTunedModels, data)
         self.cursor.execute("""
-            INSERT INTO TunedModels (id_datasets, id_apis, model_path, learning_rate,
+            INSERT INTO TunedModels (id_datasets, id_apis, model_name, model_path, learning_rate,
                                      lora_rank, accuracy, deployed, train_loss_path,
                                         val_loss_path)
-            VALUES (:id_datasets, :id_apis, :model_path, :learning_rate,
+            VALUES (:id_datasets, :id_apis, :model_name, :model_path, :learning_rate,
                     :lora_rank, :accuracy, :deployed, :train_loss_path,
                             :val_loss_path)
             """, data)

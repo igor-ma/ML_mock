@@ -155,6 +155,7 @@ class Pipeline:
             'id_datasets': dataset_id,
             'id_apis': None, #model is not deployed
             'deployed': False, #model is not deployed
+            'model_name': model_name,
             'model_path': artifacts_path,
             'learning_rate': learning_rate,
             'lora_rank': ranking,

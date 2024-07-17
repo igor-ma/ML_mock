@@ -38,7 +38,9 @@ class GUI:
 
         #create tab elements
         st.subheader('Registro de Datasets')
-        file_path = st.file_uploader('Selecione o arquivo de dados (.csv)')
+        file_path = st.file_uploader('Selecione o arquivo de dados (.csv). \
+                                     O dataset (.csv) deve conter os campos text e label, \
+                                     e suas labels precisam ser binárias (0 ou 1).')
         name = st.text_input('Nome do dataset')
         source = st.text_input('Fonte do dado')
         date = st.date_input('Data de criação', datetime.today())
@@ -83,9 +85,13 @@ class GUI:
 
     def deploy(self):
         '''Configure tab for deploying models'''
+        #list available models to deploy
+        self.db.cursor.execute('SELECT model_name, id, id_datasets FROM TunedModels')
+        models = self.db.cursor.fetchall()
+        models_list = [f"{model[0]} versão/ID {model[1]}, tunado no dataset ID {model[2]}" for model in models]
 
         st.subheader('Deploy')
-        models = st.selectbox('Modelos disponíveis para deploy', ['Modelo 1', 'Modelo 2', 'Modelo 3'])
+        models = st.selectbox('Modelos disponíveis para deploy', models_list)
         if st.button('Deploy'):
             st.success(f'Modelo {models} com deploy em andamento.')
 
