@@ -80,7 +80,8 @@ class GUI:
         learning_rate = st.number_input('Learning Rate', min_value=0.0, max_value=1.0)
         if st.button('Fine-tune'):
             with st.spinner('Fine-tuning em andamento...'):
-                self.pipeline.fineTuneModel(model, ds_option, ft_option, ranking, learning_rate)
+                dataset_id = int(ds_option.split(',')[0])
+                self.pipeline.fineTuneModel(model, dataset_id, ft_option, ranking, learning_rate)
                 st.success('Fine-tuning executado com sucesso.')
 
     def deploy(self):
@@ -88,11 +89,12 @@ class GUI:
         #list available models to deploy
         self.db.cursor.execute('SELECT model_name, id, id_datasets FROM TunedModels')
         models = self.db.cursor.fetchall()
-        models_list = [f"{model[0]} versão/ID {model[1]}, tunado no dataset ID {model[2]}" for model in models]
+        models_list = [f"{model[0]}, versão/ID {model[1]}, tunado no dataset ID {model[2]}" for model in models]
 
         st.subheader('Deploy')
-        models = st.selectbox('Modelos disponíveis para deploy', models_list)
+        model_option = st.selectbox('Modelos disponíveis para deploy', models_list)
         if st.button('Deploy'):
-            st.success(f'Modelo {models} com deploy em andamento.')
-
+            with st.spinner(f'Modelo {model_option} com deploy em andamento.'):
+                model_id = int(model_option.split('versão/ID')[1].split(',')[0])
+                self.pipeline.deployModel(model_id)
 
