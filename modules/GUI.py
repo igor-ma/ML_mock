@@ -17,7 +17,7 @@ class GUI:
 
         st.title('Fine-tuning e Deploy de LLMs para Classificação de Sentimentos')
         st.markdown("""
-            Os dataset (.csv) deve conter os campos 'text' e 'label', e suas labels precisam ser binárias (0 ou 1).
+            O dataset (.csv) deve conter os campos 'text' e 'label', e suas labels precisam ser binárias (0 ou 1).
         """)
         tabs = ['Registro de Datasets', 'Fine-tuning', 'Deploy', 'Swagger', 'Dashboard']
         choice = st.sidebar.radio('Selecione a aba:', tabs)
@@ -59,9 +59,13 @@ class GUI:
         datasets = self.db.cursor.fetchall()
         datasets_list = [f"{dataset[0]}, {dataset[1]}" for dataset in datasets]
 
+        #list available models
+        available_models = ['bert-base-uncased', 'bert-base-cased', 'distilbert-base-uncased',
+                            'roberta-base', 'albert-base-v1']
+        
         #create tab elements
         st.subheader('Fine-tuning')
-        model = st.text_input('Modelo')
+        model = st.selectbox('Modelo', available_models)
         ds_option = st.selectbox('Datasets disponíveis', datasets_list)
         ft_option = st.radio('Opção', ['Clássico', 'LoRA'])
         
