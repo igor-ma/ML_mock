@@ -4,6 +4,7 @@ import random
 import os
 import uuid
 import pandas as pd
+import pickle as pkl
 
 random.seed(123)
 
@@ -58,3 +59,8 @@ class DataUtils:
         df_test.to_csv(test_path, index=False)
 
         return train_path, val_path, test_path
+    
+    def savePickle(self, output_path: str, obj):
+        '''Save a Python object using pickle'''
+        with open(output_path, 'wb') as f:
+            pkl.dump(obj, f)
