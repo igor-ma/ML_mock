@@ -4,6 +4,7 @@ from modules.data_utils import DataUtils
 from modules.database import Database
 import datetime
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
+from peft import get_peft_model, LoraConfig, TaskType
 from datasets import load_dataset
 
 
@@ -54,11 +55,21 @@ class Pipeline:
 
         return train_dataset, val_dataset, test_dataset
     
-    def _train(self, model_name: str, learning_rate: float, train_dataset, val_dataset):
+    def _train(self, model_name: str, learning_rate: float, train_dataset, val_dataset, ft_option, ranking):
         '''Train a model given the datasets and configs'''
 
         #load model
         model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
+
+        if ft_option == 'LoRA':
+            peft_config = LoraConfig(
+                task_type=TaskType.SEQ_CLS,
+                inference_mode=False,
+                r=ranking,
+                lora_alpha=32,
+                lora_dropout=0.1
+            )
+            model = get_peft_model(model, peft_config)
         
         #set parameters for training
         training_args = TrainingArguments(
@@ -107,7 +118,7 @@ class Pipeline:
         train_dataset, val_dataset, test_dataset = self._tokenizeSplits(model_name, dataset)
 
         #fine-tune 
-        trainer = self._train(model_name, learning_rate, train_dataset, val_dataset)
+        trainer = self._train(model_name, learning_rate, train_dataset, val_dataset, ft_option, ranking)
 
         #evaluate final model
         results = self._eval(trainer, test_dataset)

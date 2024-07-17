@@ -75,7 +75,7 @@ class GUI:
         else:
             ranking = None
         
-        learning_rate = st.number_input('Learning Rate', min_value=0.0, max_value=1.0, step=0.01)
+        learning_rate = st.number_input('Learning Rate', min_value=0.0, max_value=1.0)
         if st.button('Fine-tune'):
             with st.spinner('Fine-tuning em andamento...'):
                 self.pipeline.fineTuneModel(model, ds_option, ft_option, ranking, learning_rate)
