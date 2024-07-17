@@ -33,12 +33,27 @@ class Pipeline:
         #save
         self.db.insertDatasets(data)
 
-    def load_texts(self, file_path):
-        with open(file_path, 'r', encoding='utf-8') as file:
-            texts = file.readlines()
-        texts = [text.strip() for text in texts]
-        return texts
+    def _tokenizeSplits(self, model_name: str, dataset):
+        '''Tokenize texts to build dataset splits'''
 
+        #load tokenizer
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+        #define a pad token if there isn't one
+        tokenizer.pad_token = tokenizer.eos_token if not tokenizer.pad_token else tokenizer.pad_token
+
+        #tokenize the 'text' field
+        def tokenize_function(examples):
+            return tokenizer(examples["text"], padding="max_length", truncation=True)
+        tokenized_datasets = dataset.map(tokenize_function, batched=True)
+
+        #split data
+        train_dataset = tokenized_datasets["train"]
+        val_dataset = tokenized_datasets["val"]
+        test_dataset = tokenized_datasets["test"]
+
+        return train_dataset, val_dataset, test_dataset
+    
     def _train(self, model_name: str, learning_rate: float, train_dataset, val_dataset):
         '''Train a model given the datasets and configs'''
 
@@ -71,34 +86,21 @@ class Pipeline:
     def _eval(self, trainer, test_dataset):
         '''Evaluate a model (inside object trainer) on a test dataset'''
         return trainer.evaluate(eval_dataset=test_dataset)
-    
-    def _tokenizeSplits(self, model_name: str, dataset):
-        '''Tokenize texts to build dataset splits'''
-
-        #load tokenizer
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-
-        #define a pad token if there isn't one
-        tokenizer.pad_token = tokenizer.eos_token if not tokenizer.pad_token else tokenizer.pad_token
-
-        #tokenize the 'text' field
-        def tokenize_function(examples):
-            return tokenizer(examples["text"], padding="max_length", truncation=True)
-        tokenized_datasets = dataset.map(tokenize_function, batched=True)
-
-        #split data
-        train_dataset = tokenized_datasets["train"]
-        val_dataset = tokenized_datasets["val"]
-        test_dataset = tokenized_datasets["test"]
-
-        return train_dataset, val_dataset, test_dataset
 
     def fineTuneModel(self, model_name: str, ds_option: str, ft_option: str, ranking: int, learning_rate: float):
         #load dataset
+        dataset_id = ds_option.split(',')[0]
+        self.db.cursor.execute(f"""
+            SELECT train_path, val_path, test_path 
+            FROM Datasets
+            WHERE id = {dataset_id}
+        """)
+        paths = self.db.cursor.fetchall()
+
         data_files = {
-            'train': 'data/teste/train.csv',
-            'val': 'data/teste/val.csv',
-            'test': 'data/teste/test.csv'
+            'train': paths[0][0],
+            'val': paths[0][1],
+            'test': paths[0][2]
         }
         dataset = load_dataset('csv', data_files=data_files)
 

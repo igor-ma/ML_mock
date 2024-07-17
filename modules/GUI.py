@@ -38,7 +38,7 @@ class GUI:
 
         #create tab elements
         st.subheader('Registro de Datasets')
-        txt_path = st.file_uploader('Selecione o arquivo de dados (.csv)')
+        file_path = st.file_uploader('Selecione o arquivo de dados (.csv)')
         name = st.text_input('Nome do dataset')
         source = st.text_input('Fonte do dado')
         date = st.date_input('Data de criação', datetime.today())
@@ -46,7 +46,7 @@ class GUI:
 
         if st.button('Salvar'):
             try:
-                self.pipeline.registerDataset(txt_path.name, source, date, language, name)
+                self.pipeline.registerDataset(file_path.name, source, date, language, name)
                 st.success('Dados salvos com sucesso.')
             except:
                 st.error('Erro de inserção.')
