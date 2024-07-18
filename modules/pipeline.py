@@ -14,6 +14,7 @@ import subprocess
 import sys
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from modules.api_templates import APITemplates
+import socket
 
 
 class Pipeline:
@@ -180,8 +181,13 @@ class Pipeline:
         """)
         model_path = self.db.cursor.fetchall()[0][0]
 
+        #get an available port
+        sock = socket.socket()
+        sock.bind(('', 0))
+        port = sock.getsockname()[1]
+
         #get code template to deploy
-        app_code = APITemplates().getFilledTemplate1(model_path, model_path)
+        app_code = APITemplates().getFilledTemplate1(model_path, model_path, port)
 
         #write app code (API code) on unique .py
         deploy_path = os.path.join('deploys', f'api_{str(uuid.uuid4())}.py')

@@ -6,8 +6,8 @@ class APITemplates:
     def __init__(self) -> None:
         self.buildTemplate1()
     
-    def getFilledTemplate1(self, param1, param2):
-        return self.template_1.format(param1, param2)
+    def getFilledTemplate1(self, model_path, tokenizer_path, port):
+        return self.template_1.format(model_path, tokenizer_path, port)
     
     def buildTemplate1(self):
         self.template_1 = """
@@ -46,5 +46,5 @@ def predict(request_data: PredictionRequest):
 
 if __name__ == '__main__':
     import uvicorn
-    uvicorn.run(app, host='127.0.0.1', port=8000)
+    uvicorn.run(app, host='127.0.0.1', port={})
         """
