@@ -5,6 +5,7 @@ from datetime import datetime
 from modules.database import Database
 from modules.data_utils import DataUtils
 from modules.pipeline import Pipeline
+import os
 
 
 class GUI:
@@ -16,9 +17,6 @@ class GUI:
         self.pipeline = Pipeline(db)
 
         st.title('Fine-tuning e Deploy de LLMs para Classificação de Sentimentos')
-        st.markdown("""
-            O dataset (.csv) deve conter os campos 'text' e 'label', e suas labels precisam ser binárias (0 ou 1).
-        """)
         tabs = ['Registro de Datasets', 'Fine-tuning', 'Deploy', 'Swagger', 'Dashboard']
         choice = st.sidebar.radio('Selecione a aba:', tabs)
 
@@ -94,6 +92,7 @@ class GUI:
         st.subheader('Deploy')
         model_option = st.selectbox('Modelos disponíveis para deploy', models_list)
         if st.button('Deploy'):
+            os.makedirs('deploys', exist_ok=True)
             with st.spinner(f'Modelo {model_option} com deploy em andamento.'):
                 model_id = int(model_option.split('versão/ID')[1].split(',')[0])
                 self.pipeline.deployModel(model_id)

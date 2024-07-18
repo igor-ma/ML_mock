@@ -7,16 +7,14 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trai
 from peft import get_peft_model, LoraConfig, TaskType
 from sklearn.metrics import accuracy_score
 from datasets import load_dataset
-import evaluate
-from evaluate import evaluator
 import os
 import uuid
 import os
 import subprocess
 import sys
-from pathlib import Path
-from fastapi import FastAPI
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from modules.api_templates import APITemplates
+
 
 class Pipeline:
     '''Pipeline representation class'''
@@ -25,7 +23,7 @@ class Pipeline:
         self.db = db
 
     def registerDataset(self, input_path: str, source: str, date: datetime.date, language: str, name: str):
-        '''Register a new dataset'''
+        '''Function to implement pipeline for registering a new dataset'''
 
         #get data split paths to save on database
         train_path, val_path, test_path = DataUtils().processDataset(input_path)
@@ -113,6 +111,8 @@ class Pipeline:
         return accuracy
 
     def fineTuneModel(self, model_name: str, dataset_id: int, ft_option: str, ranking: int, learning_rate: float):
+        '''Function to implement fine-tuning pipeline'''
+
         #load dataset
         self.db.cursor.execute(f"""
             SELECT train_path, val_path, test_path 
@@ -169,6 +169,20 @@ class Pipeline:
         self.db.insertTunedModels(data)
 
     def deployModel(self, model_id: int):
-        pass
+        '''Function to implement deploy pipeline'''
 
+        self.db.cursor.execute(f"""
+            SELECT model_path FROM TunedModels WHERE id = {model_id}
+        """)
+        model_path = self.db.cursor.fetchall()[0][0]
 
+        app_code = APITemplates().getFilledTemplate1(model_path, model_path)
+
+        deploy_path = os.path.join('deploys', f'api_{str(uuid.uuid4())}.py')
+
+        #write final app code
+        with open(deploy_path, 'w') as file:
+            file.write(app_code)
+
+        #run final app code
+        subprocess.Popen([sys.executable, deploy_path], cwd=os.getcwd())
