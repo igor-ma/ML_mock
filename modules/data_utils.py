@@ -64,3 +64,8 @@ class DataUtils:
         '''Save a Python object using pickle'''
         with open(output_path, 'wb') as f:
             pkl.dump(obj, f)
+
+    def loadPickle(slef, input_path: str):
+        with open(input_path, 'rb') as f:
+            data = pkl.load(f)
+        return data
