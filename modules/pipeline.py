@@ -66,6 +66,7 @@ class Pipeline:
         #load model
         model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
 
+        #if LoRA, build specific configs
         if ft_option == 'LoRA':
             peft_config = LoraConfig(
                 task_type=TaskType.SEQ_CLS,
@@ -104,6 +105,7 @@ class Pipeline:
       
     def _computeAccuracy(self, trainer, test_dataset):
         '''Compute model accuracy on a test dataset'''
+
         predictions = trainer.predict(test_dataset)
         predicted_labels = predictions.predictions.argmax(axis=1)
         true_labels = test_dataset['label']
@@ -121,10 +123,11 @@ class Pipeline:
         """)
         paths = self.db.cursor.fetchall()
 
+        #build expected format and load
         data_files = {
-            'train': paths[0][0],
-            'val': paths[0][1],
-            'test': paths[0][2]
+            'train': paths[0][0], #train path
+            'val': paths[0][1], #val path
+            'test': paths[0][2] #test path
         }
         dataset = load_dataset('csv', data_files=data_files)
 
@@ -171,18 +174,19 @@ class Pipeline:
     def deployModel(self, model_id: int):
         '''Function to implement deploy pipeline'''
 
+        #get model path
         self.db.cursor.execute(f"""
             SELECT model_path FROM TunedModels WHERE id = {model_id}
         """)
         model_path = self.db.cursor.fetchall()[0][0]
 
+        #get code template to deploy
         app_code = APITemplates().getFilledTemplate1(model_path, model_path)
 
+        #write app code (API code) on unique .py
         deploy_path = os.path.join('deploys', f'api_{str(uuid.uuid4())}.py')
-
-        #write final app code
         with open(deploy_path, 'w') as file:
             file.write(app_code)
 
-        #run final app code
+        #serve app code (API)
         subprocess.Popen([sys.executable, deploy_path], cwd=os.getcwd())
