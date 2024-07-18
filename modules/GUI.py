@@ -96,4 +96,5 @@ class GUI:
             with st.spinner(f'Modelo {model_option} com deploy em andamento.'):
                 model_id = int(model_option.split('versão/ID')[1].split(',')[0])
                 self.pipeline.deployModel(model_id)
+                st.success('Deploy executado com sucesso.')
 

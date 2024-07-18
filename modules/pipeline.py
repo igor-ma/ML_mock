@@ -196,3 +196,19 @@ class Pipeline:
 
         #serve app code (API)
         subprocess.Popen([sys.executable, deploy_path], cwd=os.getcwd())
+
+        #insert API registry on database
+        uri = f'http://127.0.0.1:{port}'
+        self.db.cursor.execute(f"""
+            INSERT INTO APIs (uri) VALUES ('{uri}')
+        """)
+        self.db.connection.commit()
+
+        #update status and foreign keys on TunedModels
+        self.db.cursor.execute(f"""
+            UPDATE TunedModels
+                SET deployed = 1, id_apis = {self.db.cursor.lastrowid}
+            WHERE id = {model_id}
+        """)
+        self.db.connection.commit()
+
