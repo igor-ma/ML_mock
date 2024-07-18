@@ -5,6 +5,7 @@ from datetime import datetime
 from modules.database import Database
 from modules.data_utils import DataUtils
 from modules.pipeline import Pipeline
+import matplotlib.pyplot as plt
 import os
 
 
@@ -17,7 +18,7 @@ class GUI:
         self.pipeline = Pipeline(db)
 
         st.title('Fine-tuning e Deploy de LLMs para Classificação de Sentimentos')
-        tabs = ['Registro de Datasets', 'Fine-tuning', 'Deploy', 'Swagger', 'Dashboard']
+        tabs = ['Registro de Datasets', 'Fine-tuning', 'Deploy', 'Dashboard']
         choice = st.sidebar.radio('Selecione a aba:', tabs)
 
         if choice == 'Registro de Datasets':
@@ -26,10 +27,8 @@ class GUI:
             self.fine_tuning()
         elif choice == 'Deploy':
             self.deploy()
-        elif choice == 'Swagger':
-            st.subheader('Aba Swagger')
         elif choice == 'Dashboard':
-            st.subheader('Aba Dashboard')
+            self.dashboard()
 
     def registro_datasets(self):
         '''Configure tab for recording datasets'''
@@ -98,3 +97,69 @@ class GUI:
                 self.pipeline.deployModel(model_id)
                 st.success('Deploy executado com sucesso.')
 
+    def dashboard(self):
+        '''Configure tab for dashboard'''
+
+        #load tuned models and related data
+        self.db.cursor.execute("""
+            SELECT * FROM TunedModels
+            JOIN APIs ON TunedModels.id_apis = APIs.id
+            JOIN Datasets ON TunedModels.id_datasets = Datasets.id
+        """)
+        deploys = self.db.cursor.fetchall()
+
+        #create selection box for deployed models
+        template = "{} versão/ID {}, tunado no dataset {} versão {}, com deploy ID {}"
+        prod_models = [template.format(deploy[3], deploy[0], deploy[20], deploy[13], deploy[11]) for deploy in deploys]
+        prod_option = st.selectbox('Modelos disponíveis para deploy', prod_models)
+        index_selected = prod_models.index(prod_option)
+
+        #process results
+        results = []
+        for row in deploys:
+            result_dict = {
+                'TunedModels_id': row[0],
+                'TunedModels_model_name': row[3],
+                'TunedModels_learning_rate': row[5],
+                'TunedModels_lora_rank': row[6],
+                'TunedModels_accuracy': row[7],
+                'TunedModels_train_loss_path': row[9],
+                'TunedModels_val_loss_path': row[10],
+                'APIs_uri': row[12],
+                'Datasets_id': row[13],
+                'Datasets_name': row[20]
+            }
+            results.append(result_dict)
+
+        selected_row = results[index_selected]
+        model_name = selected_row['TunedModels_model_name']
+        model_id = selected_row['TunedModels_id']
+        dataset_name = selected_row['Datasets_name']
+        dataset_id = selected_row['Datasets_id']
+        learning_rate = selected_row['TunedModels_learning_rate']
+        lora_rank = selected_row['TunedModels_lora_rank']
+        accuracy = selected_row['TunedModels_accuracy']
+        api_uri = selected_row['APIs_uri']
+
+        #display information
+        st.write(f"Modelo: {model_name} (ID: {model_id})")
+        st.write(f"Dataset: {dataset_name} (ID: {dataset_id})")
+        st.write(f"Learning Rate: {learning_rate}")
+        st.write(f"Lora Rank: {lora_rank}")
+        st.write(f"Acurácia: {accuracy:.3f}")
+        st.write(f"URI da API: {api_uri}")
+        st.write(f"Swagger: {api_uri + '/docs'}")
+
+        #load loss curves
+        train_loss = DataUtils().loadPickle(selected_row['TunedModels_train_loss_path'])
+        val_loss = DataUtils().loadPickle(selected_row['TunedModels_val_loss_path'])
+
+        #plot loss graph
+        plt.figure(figsize=(10, 6))
+        plt.plot(train_loss, label='Train Loss')
+        plt.plot(val_loss, label='Validation Loss')
+        plt.xlabel('Batch')
+        plt.ylabel('Loss')
+        plt.title('Curvas de Loss - Treino e Validação')
+        plt.legend()
+        st.pyplot(plt)
