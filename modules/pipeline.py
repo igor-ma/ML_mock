@@ -199,10 +199,8 @@ class Pipeline:
 
         #insert API registry on database
         uri = f'http://127.0.0.1:{port}'
-        self.db.cursor.execute(f"""
-            INSERT INTO APIs (uri) VALUES ('{uri}')
-        """)
-        self.db.connection.commit()
+        data = {'uri': uri}
+        self.db.insertAPIs(data)
 
         #update status and foreign keys on TunedModels
         self.db.cursor.execute(f"""

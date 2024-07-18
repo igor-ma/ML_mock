@@ -110,7 +110,6 @@ class Database:
         if self.cursor.lastrowid is not None:
             print(f"ID da última linha inserida: {self.cursor.lastrowid}")
 
-
     def insertTunedModels(self, data: dict):
         '''Insert row on table TunedModels'''
         
