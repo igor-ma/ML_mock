@@ -15,18 +15,18 @@ Ao abrir a plataforma é possível ver à esquerda abas que representam um peque
 3. Após o fine-tuning um modelo fica disponível para `Deploy`. Nesta aba, basta escolher qual modelo deseja deployar e clicar no botão de `Deploy`.
 4. Na aba `Dashboard` você pode visualizar maiores detalhes sobre os modelos que foram deployados, como por exemplo nome, ID no banco de dados, dataset e parâmetros usados no fine-tuning, URI da API e o link para sua documentação Swagger. Além disso, também é possível visualizar as curvas de loss dos sets de treino e validação usados no fine-tuning.
 
-## Arquitetura original
+## Arquitetura Original
 
 <p align="center">
   <img width="400" src="images/diagram.png">
 </p>
 
-## Proposta de arquitetura AWS
+## Proposta de Arquitetura AWS
 
 - **RDS** para lidar com a questão do banco de dados
 - Instância **EC2** com endpoint da interface Streamlit
 - **SageMaker** para fine-tuning
-- **S3** para armazenar artefatos (e.g. pesos do modelo)
+- **S3** para armazenar artefatos (e.g. pesos de modelos)
 - **API Gateway** para criar e monitorar APIs de modelos
 
 <p align="center">
