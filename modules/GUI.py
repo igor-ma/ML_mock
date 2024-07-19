@@ -36,7 +36,7 @@ class GUI:
 
         #create tab elements
         st.subheader('Registro de Datasets')
-        file_path = st.text_input('Path para o dataset', value='example_dataset.csv')
+        file_path = st.text_input('Path para o dataset', value='datasets/example_dataset.csv')
         name = st.text_input('Nome do dataset')
         source = st.text_input('Fonte dataset')
         date = st.date_input('Data de criação', datetime.today())
