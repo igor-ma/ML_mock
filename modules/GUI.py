@@ -146,7 +146,7 @@ class GUI:
         st.write(f"Dataset: {dataset_name} (ID: {dataset_id})")
         st.write(f"Learning Rate: {learning_rate}")
         st.write(f"Lora Rank: {lora_rank}")
-        st.write(f"Acurácia: {test_loss:.3f}")
+        st.write(f"Test Loss: {test_loss:.3f}")
         st.write(f"URI da API: {api_uri}")
         st.write(f"Swagger: {api_uri + '/docs'}")
 
