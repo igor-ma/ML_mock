@@ -17,7 +17,7 @@ class GUI:
         self.db = db
         self.pipeline = Pipeline(db)
 
-        st.title('Fine-tuning e Deploy de LLMs para Classificação de Sentimentos')
+        st.title('Mini GenPlat - Fine-tuning e Deploy de LLMs')
         tabs = ['Registro de Datasets', 'Fine-tuning', 'Deploy', 'Dashboard']
         choice = st.sidebar.radio('Selecione a aba:', tabs)
 
@@ -36,9 +36,11 @@ class GUI:
         #create tab elements
         st.subheader('Registro de Datasets')
         file_path = st.file_uploader('Selecione o arquivo de dados (.csv). \
-                                     O dataset (.csv) deve conter os campos input e reference')
+                                     Este projeto foca em tarefas de text-to-text,\
+                                     assim sendo o dataset deve conter os campos \
+                                     text e target, ambos textuais.')
         name = st.text_input('Nome do dataset')
-        source = st.text_input('Fonte do dado')
+        source = st.text_input('Fonte dataset')
         date = st.date_input('Data de criação', datetime.today())
         language = st.text_input('Idioma')
 
