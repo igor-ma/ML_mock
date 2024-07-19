@@ -36,8 +36,7 @@ class GUI:
         #create tab elements
         st.subheader('Registro de Datasets')
         file_path = st.file_uploader('Selecione o arquivo de dados (.csv). \
-                                     O dataset (.csv) deve conter os campos text e label, \
-                                     e suas labels precisam ser binárias (0 ou 1).')
+                                     O dataset (.csv) deve conter os campos input e reference')
         name = st.text_input('Nome do dataset')
         source = st.text_input('Fonte do dado')
         date = st.date_input('Data de criação', datetime.today())
@@ -59,8 +58,7 @@ class GUI:
         datasets_list = [f"{dataset[0]}, {dataset[1]}" for dataset in datasets]
 
         #list available models
-        available_models = ['bert-base-uncased', 'bert-base-cased', 'distilbert-base-uncased',
-                            'roberta-base', 'albert-base-v1']
+        available_models = ['t5-small']
         
         #create tab elements
         st.subheader('Fine-tuning')
@@ -122,7 +120,7 @@ class GUI:
                 'TunedModels_model_name': row[3],
                 'TunedModels_learning_rate': row[5],
                 'TunedModels_lora_rank': row[6],
-                'TunedModels_accuracy': row[7],
+                'TunedModels_test_loss': row[7],
                 'TunedModels_train_loss_path': row[9],
                 'TunedModels_val_loss_path': row[10],
                 'APIs_uri': row[12],
@@ -138,7 +136,7 @@ class GUI:
         dataset_id = selected_row['Datasets_id']
         learning_rate = selected_row['TunedModels_learning_rate']
         lora_rank = selected_row['TunedModels_lora_rank']
-        accuracy = selected_row['TunedModels_accuracy']
+        test_loss = selected_row['TunedModels_test_loss']
         api_uri = selected_row['APIs_uri']
 
         #display information
@@ -146,7 +144,7 @@ class GUI:
         st.write(f"Dataset: {dataset_name} (ID: {dataset_id})")
         st.write(f"Learning Rate: {learning_rate}")
         st.write(f"Lora Rank: {lora_rank}")
-        st.write(f"Acurácia: {accuracy:.3f}")
+        st.write(f"Acurácia: {test_loss:.3f}")
         st.write(f"URI da API: {api_uri}")
         st.write(f"Swagger: {api_uri + '/docs'}")
 

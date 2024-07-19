@@ -3,18 +3,17 @@
 from modules.data_utils import DataUtils
 from modules.database import Database
 import datetime
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
+from transformers import Trainer, TrainingArguments
+from transformers import T5Tokenizer, T5ForConditionalGeneration
 from peft import get_peft_model, LoraConfig, TaskType
-from sklearn.metrics import accuracy_score
-from datasets import load_dataset
 import os
 import uuid
 import os
 import subprocess
 import sys
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from modules.api_templates import APITemplates
 import socket
+from datasets import load_dataset
 
 
 class Pipeline:
@@ -49,9 +48,17 @@ class Pipeline:
         #define a pad token if there isn't one
         tokenizer.pad_token = tokenizer.eos_token if not tokenizer.pad_token else tokenizer.pad_token
 
-        #tokenize the 'text' field
+        #tokenize inputs and labels
         def tokenize_function(examples):
-            return tokenizer(examples["text"], padding="max_length", truncation=True)
+            tokenized_input = tokenizer(examples["text"], padding="max_length", truncation=True)
+            tokenized_output = tokenizer(examples["target"], padding="max_length", truncation=True)
+            tokenized_examples = {
+                "input_ids": tokenized_input["input_ids"],
+                "attention_mask": tokenized_input["attention_mask"],
+                "labels": tokenized_output["input_ids"]
+            }
+            return tokenized_examples
+        
         tokenized_datasets = dataset.map(tokenize_function, batched=True)
 
         #split data
@@ -61,11 +68,11 @@ class Pipeline:
 
         return train_dataset, val_dataset, test_dataset
     
-    def _train(self, model_name: str, learning_rate: float, train_dataset, val_dataset, ft_option, ranking, artifacts_path):
+    def _train(self, model_name: str, train_dataset, val_dataset, learning_rate: float, ft_option, ranking, artifacts_path):
         '''Train a model given the datasets and configs'''
 
         #load model
-        model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
+        model = T5ForConditionalGeneration.from_pretrained(model_name)
 
         #if LoRA, build specific configs
         if ft_option == 'LoRA':
@@ -80,8 +87,8 @@ class Pipeline:
 
         #set parameters for training
         training_args = TrainingArguments(
-            per_device_train_batch_size=4,
-            per_device_eval_batch_size=4,
+            per_device_train_batch_size=1,
+            per_device_eval_batch_size=1,
             learning_rate=learning_rate,
             output_dir=artifacts_path,
             num_train_epochs=1,
@@ -103,15 +110,6 @@ class Pipeline:
         trainer.save_model()
 
         return trainer
-      
-    def _computeAccuracy(self, trainer, test_dataset):
-        '''Compute model accuracy on a test dataset'''
-
-        predictions = trainer.predict(test_dataset)
-        predicted_labels = predictions.predictions.argmax(axis=1)
-        true_labels = test_dataset['label']
-        accuracy = accuracy_score(true_labels, predicted_labels)
-        return accuracy
 
     def fineTuneModel(self, model_name: str, dataset_id: int, ft_option: str, ranking: int, learning_rate: float):
         '''Function to implement fine-tuning pipeline'''
@@ -133,7 +131,7 @@ class Pipeline:
         dataset = load_dataset('csv', data_files=data_files)
 
         #load tokenizer
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        tokenizer = T5Tokenizer.from_pretrained(model_name)
 
         #tokenize
         train_dataset, val_dataset, test_dataset = self._tokenizeSplits(tokenizer, dataset)
@@ -143,10 +141,10 @@ class Pipeline:
         os.makedirs(artifacts_path, exist_ok=True)
 
         #fine-tune 
-        trainer = self._train(model_name, learning_rate, train_dataset, val_dataset, ft_option, ranking, artifacts_path)
+        trainer = self._train(model_name, train_dataset, val_dataset, learning_rate, ft_option, ranking, artifacts_path)
 
-        #evaluate final model
-        final_metric = self._computeAccuracy(trainer, test_dataset)
+        #to illustrate possibilities of metrics
+        test_loss = trainer.evaluate(test_dataset)['eval_loss']
 
         train_loss = [msr['loss'] for msr in trainer.state.log_history if 'loss' in msr.keys()]
         val_loss = [msr['eval_loss'] for msr in trainer.state.log_history if 'eval_loss' in msr.keys()]
@@ -166,7 +164,7 @@ class Pipeline:
             'model_path': artifacts_path,
             'learning_rate': learning_rate,
             'lora_rank': ranking,
-            'accuracy': final_metric,
+            'test_loss': test_loss,
             'train_loss_path': os.path.join(artifacts_path, 'train_loss.pkl'),
             'val_loss_path': os.path.join(artifacts_path, 'val_loss.pkl')
         }
@@ -177,9 +175,9 @@ class Pipeline:
 
         #get model path
         self.db.cursor.execute(f"""
-            SELECT model_path FROM TunedModels WHERE id = {model_id}
+            SELECT model_name, model_path FROM TunedModels WHERE id = {model_id}
         """)
-        model_path = self.db.cursor.fetchall()[0][0]
+        model_name, model_path = self.db.cursor.fetchall()[0]
 
         #get an available port
         sock = socket.socket()
@@ -187,7 +185,7 @@ class Pipeline:
         port = sock.getsockname()[1]
 
         #get code template to deploy
-        app_code = APITemplates().getFilledTemplate1(model_path, model_path, port)
+        app_code = APITemplates().getFilledTemplate1(model_name, model_path, port)
 
         #write app code (API code) on unique .py
         deploy_path = os.path.join('deploys', f'api_{str(uuid.uuid4())}.py')

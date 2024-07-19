@@ -67,7 +67,7 @@ class Database:
                 model_path TEXT,
                 learning_rate REAL,
                 lora_rank REAL,
-                accuracy REAL,
+                test_loss REAL,
                 deployed INTEGER DEFAULT 0,
                 train_loss_path TEXT,
                 val_loss_path TEXT,
@@ -76,7 +76,7 @@ class Database:
             )
         ''')
         self.fieldsTunedModels = ['id_datasets', 'id_apis', 'model_name', 'model_path', 'learning_rate',
-        'lora_rank', 'accuracy', 'deployed', 'train_loss_path', 'val_loss_path']
+        'lora_rank', 'test_loss', 'deployed', 'train_loss_path', 'val_loss_path']
     
     def _imputFields(self, fields: list, data: dict):
         '''Imput fields um data dict that might be missing according to fields list'''
@@ -116,10 +116,10 @@ class Database:
         data = self._imputFields(self.fieldsTunedModels, data)
         self.cursor.execute("""
             INSERT INTO TunedModels (id_datasets, id_apis, model_name, model_path, learning_rate,
-                                     lora_rank, accuracy, deployed, train_loss_path,
+                                     lora_rank, test_loss, deployed, train_loss_path,
                                         val_loss_path)
             VALUES (:id_datasets, :id_apis, :model_name, :model_path, :learning_rate,
-                    :lora_rank, :accuracy, :deployed, :train_loss_path,
+                    :lora_rank, :test_loss, :deployed, :train_loss_path,
                             :val_loss_path)
             """, data)
         self.connection.commit()

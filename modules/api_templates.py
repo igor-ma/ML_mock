@@ -12,9 +12,8 @@ class APITemplates:
     def buildTemplate1(self):
         self.template_1 = """
 from fastapi import FastAPI
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from transformers import T5Tokenizer, T5ForConditionalGeneration
 from pydantic import BaseModel
-import torch
 
 
 app = FastAPI()
@@ -26,13 +25,13 @@ async def loadTokenizer():
     '''Async. function to load tokenizer'''
 
     global tokenizer
-    tokenizer = AutoTokenizer.from_pretrained('{}')
+    tokenizer = T5Tokenizer.from_pretrained('{}')
 
 async def loadModel():
     '''Async. function to load model'''
 
     global model
-    model = AutoModelForSequenceClassification.from_pretrained('{}')
+    model = T5ForConditionalGeneration.from_pretrained('{}')
 
 async def runTokenization(text):
     '''Async. function to tokenize'''
@@ -41,22 +40,23 @@ async def runTokenization(text):
     await loadTokenizer() #ensure tokenizer is loaded
 
     #tokenize
-    inputs = tokenizer(text, return_tensors="pt")
+    input_ids = tokenizer(text, return_tensors='pt').input_ids
 
-    return inputs
+    return input_ids
 
-async def runInference(inputs):
+async def runInference(input_ids):
     '''Async. function to infer'''
 
-    global model
+    global model, tokenizer
     await loadModel() #ensure model is loaded
 
     #infer
-    with torch.no_grad():
-        outputs = model(**inputs)
-        logits = outputs.logits
+    output = model.generate(input_ids)
+
+    #decode
+    decoded_output = tokenizer.decode(output[0])
     
-    return logits
+    return decoded_output
 
 #request data type
 class PredictionRequest(BaseModel):
@@ -71,12 +71,9 @@ async def predict(request_data: PredictionRequest):
     inputs = await runTokenization(text)
 
     #predict
-    logits = await runInference(inputs)
+    decoded_output = await runInference(inputs)
     
-    #get predicted class from logits
-    predicted_class = torch.argmax(logits, dim=1).item()
-
-    return {{'predicted_class': predicted_class}}
+    return {{'response': decoded_output}}
 
 if __name__ == '__main__':
     import uvicorn
