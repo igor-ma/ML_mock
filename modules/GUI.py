@@ -7,6 +7,7 @@ from modules.data_utils import DataUtils
 from modules.pipeline import Pipeline
 import matplotlib.pyplot as plt
 import os
+import traceback
 
 
 class GUI:
@@ -35,10 +36,7 @@ class GUI:
 
         #create tab elements
         st.subheader('Registro de Datasets')
-        file_path = st.file_uploader('Selecione o arquivo de dados (.csv). \
-                                     Este projeto foca em tarefas de text-to-text,\
-                                     assim sendo o dataset deve conter os campos \
-                                     text e target, ambos textuais.')
+        file_path = st.text_input('Path para o dataset', value='example_dataset.csv')
         name = st.text_input('Nome do dataset')
         source = st.text_input('Fonte dataset')
         date = st.date_input('Data de criação', datetime.today())
@@ -46,10 +44,11 @@ class GUI:
 
         if st.button('Salvar'):
             try:
-                self.pipeline.registerDataset(file_path.name, source, date, language, name)
+                self.pipeline.registerDataset(file_path, source, date, language, name)
                 st.success('Dados salvos com sucesso.')
             except:
                 st.error('Erro de inserção.')
+                traceback.print_exc()
 
     def fine_tuning(self):
         '''Configure tab for running fine-tunings'''
