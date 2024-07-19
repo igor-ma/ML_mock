@@ -59,7 +59,7 @@ class GUI:
         datasets_list = [f"{dataset[0]}, {dataset[1]}" for dataset in datasets]
 
         #list available models
-        available_models = ['t5-small']
+        available_models = ['t5-base', 't5-small']
         
         #create tab elements
         st.subheader('Fine-tuning')
