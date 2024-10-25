@@ -18,11 +18,11 @@ class GUI:
         self.db = db
         self.pipeline = Pipeline(db)
 
-        st.title('Mini GenPlat - Fine-tuning e Deploy de LLMs')
-        tabs = ['Registro de Datasets', 'Fine-tuning', 'Deploy', 'Dashboard']
-        choice = st.sidebar.radio('Selecione a aba:', tabs)
+        st.title('Mini GenPlat - Fine-tuning and Deployment of LLMs')
+        tabs = ['Dataset Registration', 'Fine-tuning', 'Deploy', 'Dashboard']
+        choice = st.sidebar.radio('Select the tab:', tabs)
 
-        if choice == 'Registro de Datasets':
+        if choice == 'Dataset Registration':
             self.registro_datasets()
         elif choice == 'Fine-tuning':
             self.fine_tuning()
@@ -35,19 +35,19 @@ class GUI:
         '''Configure tab for recording datasets'''
 
         #create tab elements
-        st.subheader('Registro de Datasets')
-        file_path = st.text_input('Path para o dataset', value='datasets/example_dataset.csv')
-        name = st.text_input('Nome do dataset')
-        source = st.text_input('Fonte dataset')
-        date = st.date_input('Data de criação', datetime.today())
-        language = st.text_input('Idioma')
+        st.subheader('Dataset Registration')
+        file_path = st.text_input('Path to dataset', value='datasets/example_dataset.csv')
+        name = st.text_input('Dataset name')
+        source = st.text_input('Dataset source')
+        date = st.date_input('Creation date', datetime.today())
+        language = st.text_input('Language')
 
-        if st.button('Salvar'):
+        if st.button('Save'):
             try:
                 self.pipeline.registerDataset(file_path, source, date, language, name)
-                st.success('Dados salvos com sucesso.')
+                st.success('Data saved successfully.')
             except:
-                st.error('Erro de inserção.')
+                st.error('Insertion error.')
                 traceback.print_exc()
 
     def fine_tuning(self):
@@ -63,9 +63,9 @@ class GUI:
         
         #create tab elements
         st.subheader('Fine-tuning')
-        model = st.selectbox('Modelo', available_models)
-        ds_option = st.selectbox('Datasets disponíveis', datasets_list)
-        ft_option = st.radio('Opção', ['Clássico', 'LoRA'])
+        model = st.selectbox('Model', available_models)
+        ds_option = st.selectbox('Available datasets', datasets_list)
+        ft_option = st.radio('Option', ['Classic', 'LoRA'])
         
         #enable LoRA specific parameters
         if ft_option == 'LoRA':
@@ -75,26 +75,26 @@ class GUI:
         
         learning_rate = st.number_input('Learning Rate', min_value=0.0, max_value=1.0)
         if st.button('Fine-tune'):
-            with st.spinner('Fine-tuning em andamento...'):
+            with st.spinner('Fine-tuning in progress...'):
                 dataset_id = int(ds_option.split(',')[0])
                 self.pipeline.fineTuneModel(model, dataset_id, ft_option, ranking, learning_rate)
-                st.success('Fine-tuning executado com sucesso.')
+                st.success('Fine-tuning successfully performed.')
 
     def deploy(self):
         '''Configure tab for deploying models'''
         #list available models to deploy
         self.db.cursor.execute('SELECT model_name, id, id_datasets FROM TunedModels')
         models = self.db.cursor.fetchall()
-        models_list = [f"{model[0]}, versão/ID {model[1]}, tunado no dataset ID {model[2]}" for model in models]
+        models_list = [f"{model[0]}, version/ID {model[1]}, fine-tuned in dataset with ID {model[2]}" for model in models]
 
         st.subheader('Deploy')
-        model_option = st.selectbox('Modelos disponíveis para deploy', models_list)
+        model_option = st.selectbox('Models available for deployment', models_list)
         if st.button('Deploy'):
             os.makedirs('deploys', exist_ok=True)
-            with st.spinner(f'Modelo {model_option} com deploy em andamento.'):
-                model_id = int(model_option.split('versão/ID')[1].split(',')[0])
+            with st.spinner(f'{model_option} model with deployment in progress.'):
+                model_id = int(model_option.split('version/ID')[1].split(',')[0])
                 self.pipeline.deployModel(model_id)
-                st.success('Deploy executado com sucesso.')
+                st.success('Deployment successfully performed.')
 
     def dashboard(self):
         '''Configure tab for dashboard'''
@@ -108,9 +108,9 @@ class GUI:
         deploys = self.db.cursor.fetchall()
 
         #create selection box for deployed models
-        template = "{} versão/ID {}, tunado no dataset {} versão {}, com deploy ID {}"
+        template = "{} version/ID {}, fine-tuned in dataset with ID {} version {}, with deploy ID {}"
         prod_models = [template.format(deploy[3], deploy[0], deploy[20], deploy[13], deploy[11]) for deploy in deploys]
-        prod_option = st.selectbox('Modelos disponíveis para deploy', prod_models)
+        prod_option = st.selectbox('Deployed models', prod_models)
         index_selected = prod_models.index(prod_option)
 
         #process results
@@ -141,12 +141,12 @@ class GUI:
         api_uri = selected_row['APIs_uri']
 
         #display information
-        st.write(f"Modelo: {model_name} (ID: {model_id})")
+        st.write(f"Model: {model_name} (ID: {model_id})")
         st.write(f"Dataset: {dataset_name} (ID: {dataset_id})")
         st.write(f"Learning Rate: {learning_rate}")
         st.write(f"Lora Rank: {lora_rank}")
         st.write(f"Test Loss: {test_loss:.3f}")
-        st.write(f"URI da API: {api_uri}")
+        st.write(f"API URI: {api_uri}")
         st.write(f"Swagger: {api_uri + '/docs'}")
 
         #load loss curves
@@ -159,6 +159,6 @@ class GUI:
         plt.plot(val_loss, label='Validation Loss')
         plt.xlabel('Batch')
         plt.ylabel('Loss')
-        plt.title('Curvas de Loss - Treino e Validação')
+        plt.title('Loss Curves - Training and Validation')
         plt.legend()
         st.pyplot(plt)
